@@ -21,10 +21,11 @@ def register(request):
 
 
 def login(request):
+    username = request.session.get('username')
+    if username:
+        return HttpResponse(f'{username} 用户已存在')
     if request.method == 'GET':
-        cooki_username = request.COOKIES.get('username', '')
-        username = cooki_username.encode('ISO-8859-1').decode('utf-8')
-        return render(request, 'login.html', locals())
+        return render(request, 'login.html')
     else:
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -34,8 +35,8 @@ def login(request):
         except User.DoesNotExist:
             return JsonResponse({'message': 'login failed'})
         else:
-            response = JsonResponse({'message': 'login success'})
+            request.session['user_id'] = user.id
+            request.session['username'] = user.username
             if remember == 'true':
-                username = bytes(username, 'utf-8').decode('ISO-8859-1')
-                response.set_cookie('username', username, max_age=14 * 24 * 3600)
-            return response
+                request.session.set_expiry(0)
+            return JsonResponse({'message': 'login success'})
